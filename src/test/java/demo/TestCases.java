@@ -1,5 +1,4 @@
 package demo;
-
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
@@ -16,14 +15,13 @@ import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
-
+import java.util.List;
 import com.google.common.base.Equivalence.Wrapper;
-
 import java.time.Duration;
 import java.util.logging.Level;
-
 import demo.utils.ExcelDataProvider;
 // import io.github.bonigarcia.wdm.WebDriverManager;
 import demo.wrappers.Wrappers;
@@ -112,20 +110,78 @@ public class TestCases extends ExcelDataProvider{ // Lets us read the data
                 System.out.println("Ended testCase04");
         }
 
-        @Test(priority = 5, enabled = true, description = "URL assertion and about page message printing")
-        public void testCase05() throws InterruptedException{
-                System.out.println("Started testCase05");
-                String URL = "https://www.youtube.com/";
-                Assert.assertTrue(Wrappers.navigateToUrl(driver, URL),"Navigation to the URL failed.");
-                System.out.println("Ended testCase05");
-        }
+       @Test(dataProvider = "excelData",dataProviderClass = ExcelDataProvider.class,enabled = true,priority = 5)
+        public void testCase05(String to_be_searched) throws InterruptedException {
+                driver.get("https://www.youtube.com");
+                Thread.sleep(1000);
+                WebElement searchBox = driver.findElement(By.xpath("//input[@placeholder='Search']"));
+                // searchBox.sendKeys(searchName);
+                Wrappers.click(searchBox);
+                Wrappers.sendKeys(searchBox, to_be_searched);
+
+                WebElement search = driver.findElement(By.id("search-icon-legacy"));
+                Wrappers.click(search);
+                Thread.sleep(5000);
+        
+                long totalViews = 0;
+                JavascriptExecutor js = (JavascriptExecutor) driver;
+                while (totalViews < 1000000000) { // 10 Crore views
+                    List<WebElement> videoElements = driver.findElements(By.xpath("//span[contains(@class,'inline-metadata') and contains(text(),'views')]"));
+        
+                    for (WebElement videoElement : videoElements) {
+                        String viewsText = videoElement.getText();
+                        if (viewsText.contains("views")) {
+                            viewsText = viewsText.split(" ")[0]; // Get the number part
+                            totalViews += parseViews(viewsText);
+                        }
+        
+                        if (totalViews >= 1000000000) {
+                            break;
+                            
+                        }
+                    }
+        
+                    js.executeScript("window.scrollBy(0, 1000);");
+                    Thread.sleep(2000); // Wait for new videos to load
+                }
+        
+                System.out.println("Total views for " + to_be_searched + ": " + totalViews);
+            }
+        
+            private long parseViews(String viewsText) {
+                long views = 0;
+                if (viewsText.endsWith("K")) {
+                    views = (long) (Double.parseDouble(viewsText.replace("K", "")) * 1_000);
+                } else if (viewsText.endsWith("M")) {
+                    views = (long) (Double.parseDouble(viewsText.replace("M", "")) * 1_000_000);
+                } else if (viewsText.endsWith("B")) {
+                    views = (long) (Double.parseDouble(viewsText.replace("B", "")) * 1_000_000_000);
+                } else {
+                    views = Long.parseLong(viewsText.replace(",", ""));
+                }
+                return views;
+            }
+
+              @DataProvider(name = "excelData")
+    public static Object[][] provideData() {
+        // Example data, replace with your actual data retrieval logic
+        return new Object[][] {
+            {"Movies"},
+            {"Music"},
+            {"Games"},
+            {"India"},
+            {"UK"}
+            // Add more data as needed
+        };
+    }
 
 
 
-        @AfterTest
-        public void endTest() {
-                driver.close();
-                driver.quit();
 
-        }
+        // @AfterTest
+        // public void endTest() {
+        //         driver.close();
+        //         driver.quit();
+
+        // }
 }

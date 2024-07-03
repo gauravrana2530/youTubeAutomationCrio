@@ -260,4 +260,22 @@ public class Wrappers {
       return (long) (number * multiplier);
   }
 
+    public static void click(WebElement searchBox) {
+      
+      try {
+        searchBox.click();
+      } catch (Exception e) {
+       System.out.println(e.getMessage());
+      }
+    }
+
+    public static void sendKeys(WebElement searchBox, String to_be_searched) {
+       try {
+        searchBox.clear();
+        searchBox.sendKeys(to_be_searched);
+       } catch (Exception e) {
+        System.out.println(e.getMessage());
+       }
+    }
+
 }
